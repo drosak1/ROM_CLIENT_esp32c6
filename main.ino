@@ -1,15 +1,18 @@
 /*
   Visual 
 */
+#include <Arduino.h>
+#include <esp_sleep.h>
 
 #include "core_task1.h"
 #include "core_task2.h"
 #include "serial_task.h"
 #include "shared_data.h"
 #include "esp_task_wdt.h" //watchdog
-#include <Arduino.h>
+#define BUTTON_PIN    4  // GPIO4
+#define BUTTON_3 GPIO_NUM_3
+#define WAKEUP_TIME_SEC 10        // czas wybudzenia w sekundach
 
-#define BUTTON_PIN 4  // GPIO4
 volatile bool buttonPressed = false;  // musi być volatile! aby kompilator nie optymalizował ich "na zbyt mądrze"
 static unsigned long lastPrint = 0;
 
@@ -26,10 +29,27 @@ void IRAM_ATTR handleInterrupt() {
 void setup() {
   Serial.begin(115200);
   while (!Serial); // Czekaj na połączenie
+  delay(500);
 
   Serial.println("System uruchomiony. Czekam ...");
 
+  // Sprawdź, co obudziło ESP
+  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+  switch (wakeup_reason) {
+    case ESP_SLEEP_WAKEUP_TIMER:
+      Serial.println("💤 Wybudzenie przez TIMER");
+      break;
+    case ESP_SLEEP_WAKEUP_EXT1:
+      Serial.println("💤 Wybudzenie przez PRZYCISK (EXT1)");
+      break;
+    default:
+      Serial.println("🔄 Uruchomienie po resecie / power-on");
+      break;
+  }
+
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_3, INPUT); // używamy pullup na zewnatrz !!!
+
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleInterrupt, FALLING);
   //attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleInterrupt, RISING);
   //attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleInterrupt, CHANGE);
@@ -63,6 +83,21 @@ void setup() {
   esp_task_wdt_add(NULL);  // loop()
   esp_task_wdt_add(Task1); // Task1
   esp_task_wdt_add(Task2); // Task2
+
+  // Ustawienie timera budzenia
+  //esp_sleep_enable_timer_wakeup(60 * 1000000); // 60 sekund
+
+  // Maska pinu 9
+  uint64_t pinMask = 1ULL << BUTTON_3;
+
+  // Wybudzenie: przycisk (stan niski) lub timer (10 sekund)
+  esp_sleep_enable_ext1_wakeup(pinMask, ESP_EXT1_WAKEUP_ALL_LOW);
+  //esp_sleep_enable_timer_wakeup(WAKEUP_TIME_SEC * 1000000);
+
+  // Start deep sleep
+  esp_task_wdt_deinit();  // wyłącza watchdog (nie jest potrzebny przy deep sleep)
+  esp_light_sleep_start();
+  esp_task_wdt_reset(); 
 }
 
 void loop() {
@@ -71,6 +106,11 @@ void loop() {
   if (millis() - lastPrint > 2000) {
     Serial.println("loop() działa niezależnie...");
     lastPrint = millis();
+  }
+
+  if(buttonPressed){
+    buttonPressed = false;
+    Serial.println("buttonPressed");
   }
 
   delay(1000);
