@@ -3,4 +3,4 @@ temp/
 VirtualEnv
 .vscode/
 build/
-.DS_Store/
+.DS_Store
