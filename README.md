@@ -1,4 +1,4 @@
-# Arduino ESP32 Multitasking Example
+# ESP32c6 Multitasking Example
 
 This project demonstrates multitasking on the ESP32 platform using FreeRTOS tasks, hardware interrupts, and a watchdog timer. It is designed for educational purposes and is structured for clarity and modularity.
 
