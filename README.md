@@ -46,5 +46,14 @@ This project demonstrates multitasking on the ESP32 platform using FreeRTOS task
 - Arduino Maker Workshop › Arduino CLI: Executable Executable filenam -> arduino-cli
 - Arduino Maker Workshop › Arduino CLI: Install Path -> /Applications/Arduino IDE.app/Contents/Resources/Arduino IDE
 
+## Github
+- git init & add files & commit
+- git remote add origin https://github.com/drosak1/ROM_CLIENT_esp32c6.git
+- git pull origin main --allow-unrelated-histories
+- https://github.com/settings/tokens -> “Personal access tokens (classic)”
+- [x] repo [x] workflow [x] read:org
+- Username for 'https://github.com': drosak1
+- Password for 'https://github.com': <paste the token>
+
 ## Autor
 Dawid Rosak
