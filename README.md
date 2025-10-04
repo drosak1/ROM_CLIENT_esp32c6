@@ -60,7 +60,7 @@ This project demonstrates multitasking on the ESP32 platform using FreeRTOS task
 ## Tryby uśpienia ESP32-C6
 ESP32-C6 (RISC-V, Wi-Fi 6, BLE 5) ma 3 główne tryby oszczędzania energii:
 Dla ESP32-C6 RTC IO są : (GPIO0, GPIO1, GPIO2, GPIO3, GPIO4, GPIO5, GPIO6, GPIO7)
-Tryb	    Co działa	Zużycie energii (orientacyjnie)	Użycie
+Tryb, Co działa, Zużycie energii (orientacyjnie)
 Modem-sleep	CPU aktywny, Wi-Fi/BLE śpi okresowo	3–20 mA	gdy CPU musi działać, ale Wi-Fi nie cały czas
 Light-sleep	CPU i większość peryferiów wstrzymana, RAM zachowany	0.8–2 mA	gdy chcesz szybkie wybudzenie
 Deep-sleep	CPU, Wi-Fi, BLE i RAM wyłączone (tylko RTC działa)	10–20 µA	minimalne zużycie – np. zasilanie bateryjne
