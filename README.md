@@ -54,6 +54,7 @@ This project demonstrates multitasking on the ESP32 platform using FreeRTOS task
 - [x] repo [x] workflow [x] read:org
 - Username for 'https://github.com': drosak1
 - Password for 'https://github.com': <paste the token>
+- git push --force origin main
 
 ## Autor
 Dawid Rosak
