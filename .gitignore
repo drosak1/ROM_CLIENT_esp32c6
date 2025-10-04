@@ -1,0 +1,5 @@
+temp/
+.venv/
+VirtualEnv
+.vscode/
+build/
