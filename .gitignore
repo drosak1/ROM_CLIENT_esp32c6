@@ -4,3 +4,4 @@ VirtualEnv
 .vscode/
 build/
 .DS_Store
+.
