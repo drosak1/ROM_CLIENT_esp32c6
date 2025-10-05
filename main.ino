@@ -3,12 +3,16 @@
 */
 #include <Arduino.h>
 #include <esp_sleep.h>
+#include <Time.h> //watchdog and timer
+#include <Ticker.h>
+#include <Wire.h>
 
 #include "core_task1.h"
 #include "core_task2.h"
 #include "serial_task.h"
 #include "shared_data.h"
 #include "esp_task_wdt.h" //watchdog
+#include "dlb_eeprom.h"
 #define BUTTON_PIN    4  // GPIO4
 #define BUTTON_3 GPIO_NUM_3
 #define WAKEUP_TIME_SEC 10        // czas wybudzenia w sekundach
@@ -16,11 +20,19 @@
 volatile bool buttonPressed = false;  // musi być volatile! aby kompilator nie optymalizował ich "na zbyt mądrze"
 static unsigned long lastPrint = 0;
 
-
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 
 TaskHandle_t SerialTaskHandle = NULL;
+
+/* -------------------------------------------------------------------------------------- Definicja obiektow */
+dlb_eeprom dlb_eeprom_obj(true);
+
+/* -------------------------------------------------------------------------------------- Zmienne konfiguracyjne */
+// String user_name ="";
+// String wifiSSID = "";
+// String wifiPassword = "";
+// String server_name = "";
 
 void IRAM_ATTR handleInterrupt() {
   buttonPressed = true;
@@ -33,7 +45,12 @@ void setup() {
 
   Serial.println("System uruchomiony. Czekam ...");
 
-  // Sprawdź, co obudziło ESP
+  sharedData.wifiSSID = dlb_eeprom_obj.read(0, 22);
+  sharedData.wifiPassword = dlb_eeprom_obj.read(22, 22);
+  sharedData.user_name = dlb_eeprom_obj.read(44, 20);
+  sharedData.server_name = dlb_eeprom_obj.read(64, 20);
+
+  /* -------------------------------------------------------------------------------------- Sprawdź, co obudziło ESP */
   esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
   switch (wakeup_reason) {
     case ESP_SLEEP_WAKEUP_TIMER:
@@ -97,7 +114,7 @@ void setup() {
   // Start deep sleep
   esp_task_wdt_deinit();  // wyłącza watchdog (nie jest potrzebny przy deep sleep)
   esp_light_sleep_start();
-  esp_task_wdt_reset(); 
+  esp_task_wdt_reset();
 }
 
 void loop() {

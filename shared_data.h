@@ -9,6 +9,11 @@ struct SharedData {
     int counter;
     bool ledState;
     String name;
+    //z EEPROM
+    String user_name;
+    String wifiSSID;
+    String wifiPassword;
+    String server_name;
 };
 
 // Inicjalizacja zmiennych i mutexa
