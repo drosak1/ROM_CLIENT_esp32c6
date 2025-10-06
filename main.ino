@@ -7,18 +7,37 @@
 #include <Ticker.h>
 #include <Wire.h>
 
+#include <WiFi.h>
+#include <DNSServer.h>
+#include <WiFiMulti.h>
+#include <HTTPClient.h>
+#include <ESPmDNS.h>
+#include <WebServer.h>
+
 #include "core_task1.h"
 #include "core_task2.h"
 #include "serial_task.h"
 #include "shared_data.h"
 #include "esp_task_wdt.h" //watchdog
 #include "dlb_eeprom.h"
+#include "WWW_site.h"
+#include "dlb_server.h"
+
+int server_firmware_version = 1;
+
 #define BUTTON_PIN    4  // GPIO4
 #define BUTTON_3 GPIO_NUM_3
 #define WAKEUP_TIME_SEC 10        // czas wybudzenia w sekundach
 
 volatile bool buttonPressed = false;  // musi być volatile! aby kompilator nie optymalizował ich "na zbyt mądrze"
 static unsigned long lastPrint = 0;
+
+bool Serial_ = true;
+
+String server_fingerprit;
+WiFiMulti wifiMulti;
+DNSServer dnsServer;
+WebServer server(80);
 
 TaskHandle_t Task1;
 TaskHandle_t Task2;
@@ -27,7 +46,7 @@ TaskHandle_t SerialTaskHandle = NULL;
 
 /* -------------------------------------------------------------------------------------- Definicja obiektow */
 dlb_eeprom dlb_eeprom_obj(true);
-
+dlb_server dlb_server_obj(&server, server_firmware_version);
 /* -------------------------------------------------------------------------------------- Zmienne konfiguracyjne */
 // String user_name ="";
 // String wifiSSID = "";
@@ -38,6 +57,18 @@ void IRAM_ATTR handleInterrupt() {
   buttonPressed = true;
 }
 
+// Funkcja do obsługi strony głównej
+void handleRoot() {
+    server.send(200, "text/html", web_site());
+}
+
+// captive portal page detect that WiFi AP has a captive portal page
+void handleNotFound() {
+  server.sendHeader("Location", "/portal");
+  server.send(302, "text/plain", "redirect to captive portal");
+}
+
+/* $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
 void setup() {
   Serial.begin(115200);
   while (!Serial); // Czekaj na połączenie
@@ -108,17 +139,42 @@ void setup() {
   uint64_t pinMask = 1ULL << BUTTON_3;
 
   // Wybudzenie: przycisk (stan niski) lub timer (10 sekund)
-  esp_sleep_enable_ext1_wakeup(pinMask, ESP_EXT1_WAKEUP_ALL_LOW);
+  //esp_sleep_enable_ext1_wakeup(pinMask, ESP_EXT1_WAKEUP_ALL_LOW);
   //esp_sleep_enable_timer_wakeup(WAKEUP_TIME_SEC * 1000000);
 
   // Start deep sleep
-  esp_task_wdt_deinit();  // wyłącza watchdog (nie jest potrzebny przy deep sleep)
-  esp_light_sleep_start();
-  esp_task_wdt_reset();
-}
+  //esp_task_wdt_deinit();  // wyłącza watchdog (nie jest potrzebny przy deep sleep)
+  //esp_light_sleep_start();
+  //esp_task_wdt_reset();
 
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP("ROM_APN");
+  if (dnsServer.start()) {
+      Serial.println("Started DNS server in captive portal-mode");
+  } else {
+      Serial.println("Err: Can't start DNS server!");
+  }
+
+  server.onNotFound([]() {
+    server.send(200, "text/html", web_site());
+  });
+
+  // Obsługa żądania GET
+  server.on("/setting", HTTP_GET, []() {
+    String message = "<html><h1>done!</h1></html>";
+    //handleSave();
+    server.send(200, "text/html", message);  // Wyślij odpowiedź
+    //if(Serial_) Serial.println("restart");
+    esp_restart();
+  });
+  server.begin();
+} //setup
+/* $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
+
+/* $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
 void loop() {
   esp_task_wdt_reset();
+  server.handleClient();
 
   if (millis() - lastPrint > 2000) {
     Serial.println("loop() działa niezależnie...");
