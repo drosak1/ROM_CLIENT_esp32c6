@@ -99,12 +99,36 @@ bool dlb_server::update(String addres) {
 void dlb_server::set_macAddress() {
 }
 
+String dlb_server::get_https_buff(String addres) {
+  WiFiClientSecure client;
+  client.setCACert(this->root_ca);
+  client.setInsecure();  // ⚠️ Wyłączenie weryfikacji certyfikatu (atak typu MITM)
+  HTTPClient https;
+  String payload;
+  if (https.begin(client, addres)) {
+    Serial.println("Nawiązywanie połączenia HTTPS...");
+    int httpCode = https.GET();
 
+    if (httpCode > 0) {
+      Serial.printf("Kod HTTP: %d\n", httpCode);
+      payload = https.getString();
+      Serial.println("Odpowiedź:");
+      Serial.println(payload);
+    } else {
+      Serial.printf("Błąd połączenia: %s\n", https.errorToString(httpCode).c_str());
+    }
+    https.end();
+  } else {
+    Serial.println("Nie udało się rozpocząć połączenia HTTPS");
+  }
+  return payload;
+}
 
 String dlb_server::get_http_buff(String addres) {
   HTTPClient http;
-  Serial.print("[HTTP] begin...\n");
+  uint8_t buff[128] = { 0 };
 
+  Serial.print("[HTTP] begin...\n");
   http.begin(addres);
   //http.begin("http://dlb.com.pl", 80, "/api.php");
 
@@ -116,7 +140,6 @@ String dlb_server::get_http_buff(String addres) {
 
     if (httpCode == HTTP_CODE_OK) {
       int len = http.getSize();
-      uint8_t buff[128] = { 0 };
       WiFiClient* stream = http.getStreamPtr();
 
       while (http.connected() && (len > 0 || len == -1)) {
@@ -130,14 +153,11 @@ String dlb_server::get_http_buff(String addres) {
         }
         delay(2);  //tooo slow ...
       }
-
-      return (char*)buff;
-
     } else {
       Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
       return "[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str();
     }
-
     http.end();
   }
+  return (char*)buff;
 }

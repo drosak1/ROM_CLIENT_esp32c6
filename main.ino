@@ -11,6 +11,7 @@
 #include <DNSServer.h>
 #include <WiFiMulti.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ESPmDNS.h>
 #include <WebServer.h>
 
@@ -154,11 +155,9 @@ void setup() {
   } else {
       Serial.println("Err: Can't start DNS server!");
   }
-
   server.onNotFound([]() {
     server.send(200, "text/html", web_site());
   });
-
   // Obsługa żądania GET
   server.on("/setting", HTTP_GET, []() {
     String message = "<html><h1>done!</h1></html>";
@@ -168,6 +167,12 @@ void setup() {
     esp_restart();
   });
   server.begin();
+  
+  WiFi.begin(sharedData.wifiSSID, sharedData.wifiPassword);
+  //while (WiFi.status() != WL_CONNECTED) {
+  //  delay(100);
+  //  Serial.print("...");
+  //}
 } //setup
 /* $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
 
