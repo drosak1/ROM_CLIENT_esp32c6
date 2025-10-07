@@ -10,7 +10,7 @@ This project demonstrates multitasking on the ESP32 platform using FreeRTOS task
 - **Współdzielone dane:** Przykład bezpiecznego współdzielenia danych między taskami
 
 ## Pliki projektu
-- `test.ino` – główny plik uruchomieniowy
+- `main.ino` – główny plik uruchomieniowy
 - `core_task1.*`, `core_task2.*` – implementacje zadań
 - `serial_task.*` – obsługa komunikacji szeregowej
 - `shared_data.*` – współdzielone dane między taskami
