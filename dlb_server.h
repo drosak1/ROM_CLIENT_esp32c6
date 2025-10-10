@@ -11,7 +11,8 @@
 class dlb_server {
 public:
   dlb_server(WebServer * server, int logger_firmware_version);
-  bool send_event(String addres);
+  bool send_http_event(String addres);
+  bool send_https_event(String addres);
   void set_macAddress();
   bool get_credential(String addres);
   bool update(String addres);
