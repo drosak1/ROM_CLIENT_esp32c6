@@ -6,8 +6,15 @@ dlb_server::dlb_server(WebServer* server, int logger_firmware_version) {
 }
 
 
-bool dlb_server::send_event(String addres) {
+bool dlb_server::send_http_event(String addres) {
   String stringOne = get_http_buff(addres);
+  //{"result":GET OK}
+  if (stringOne.indexOf("GET OK") > 3) return true;
+  else return false;
+}
+
+bool dlb_server::send_https_event(String addres) {
+  String stringOne = get_https_buff(addres);
   //{"result":GET OK}
   if (stringOne.indexOf("GET OK") > 3) return true;
   else return false;
@@ -107,15 +114,15 @@ String dlb_server::get_https_buff(String addres) {
   String payload;
   if (https.begin(client, addres)) {
     Serial.println("Nawiązywanie połączenia HTTPS...");
-    int httpCode = https.GET();
+    int httpsCode = https.GET();
 
-    if (httpCode > 0) {
-      Serial.printf("Kod HTTP: %d\n", httpCode);
+    if (httpsCode > 0) {
+      Serial.printf("Kod HTTPS: %d\n", httpsCode);
       payload = https.getString();
       Serial.println("Odpowiedź:");
       Serial.println(payload);
     } else {
-      Serial.printf("Błąd połączenia: %s\n", https.errorToString(httpCode).c_str());
+      Serial.printf("Błąd połączenia: %s\n", https.errorToString(httpsCode).c_str());
     }
     https.end();
   } else {
