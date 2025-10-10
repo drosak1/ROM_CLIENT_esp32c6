@@ -63,6 +63,50 @@ void handleRoot() {
     server.send(200, "text/html", web_site());
 }
 
+// Funkcja do zapisywania danych z formularza
+void handleSave() {
+    if (server.hasArg("wifissid") && server.hasArg("wifipass") && server.hasArg("server_name")) {
+
+    if (server.hasArg("wifissid")) {  // Sprawdź, czy istnieje parametr o nazwie "variable_name"
+      if(server.arg("wifissid")=="*"){
+        dlb_eeprom_obj.save("", 0, 22);
+      }
+      else
+        //DLB_EPR.save(server->arg("wifissid"),0,22);  
+        dlb_eeprom_obj.save(server.arg("wifissid"), 0, 22);
+    }
+
+    if (server.hasArg("wifipass")) {  // Sprawdź, czy istnieje parametr o nazwie "variable_name"
+      if(server.arg("wifipass")=="*"){
+        dlb_eeprom_obj.save("", 22, 22);
+      }
+      else
+      //DLB_EPR.save(server->arg("wifipass"),22,22);  
+      dlb_eeprom_obj.save(server.arg("wifipass"), 22, 22);
+    }
+
+    if (server.hasArg("username")) {  // Sprawdź, czy istnieje parametr o nazwie "variable_name"
+      if(server.arg("username")=="*"){
+        dlb_eeprom_obj.save("", 44, 20);
+      }
+      else
+      //DLB_EPR.save(server->arg("username"),44,20);  
+      dlb_eeprom_obj.save(server.arg("username"), 44, 20);
+    }
+
+    if (server.hasArg("server_name")) {
+      dlb_eeprom_obj.save(server.arg("server_name"), 64, 20);
+    }
+
+    server.send(200, "text/plain", "Dane zapisane! Restartowanie...");
+    delay(1000);
+    esp_restart();  // Restart ESP po zapisaniu danych
+  } 
+  else {
+    server.send(400, "text/plain", "Błąd: Brak danych");
+  }
+}
+
 // captive portal page detect that WiFi AP has a captive portal page
 void handleNotFound() {
   server.sendHeader("Location", "/portal");
@@ -161,7 +205,7 @@ void setup() {
   // Obsługa żądania GET
   server.on("/setting", HTTP_GET, []() {
     String message = "<html><h1>done!</h1></html>";
-    //handleSave();
+    handleSave();
     server.send(200, "text/html", message);  // Wyślij odpowiedź
     //if(Serial_) Serial.println("restart");
     esp_restart();
@@ -181,7 +225,7 @@ void loop() {
   esp_task_wdt_reset();
   server.handleClient();
 
-  if (millis() - lastPrint > 2000) {
+  if (millis() - lastPrint > 5000) {
     Serial.println("loop() działa niezależnie...");
     lastPrint = millis();
   }
@@ -191,5 +235,47 @@ void loop() {
     Serial.println("buttonPressed");
   }
 
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("no WiFi connection ...");
+    delay(1000);
+    WiFi.begin(sharedData.wifiSSID, sharedData.wifiPassword);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(100);
+      Serial.print("...");
+    }
+  }
+  else{
+
+  dlb_server_obj.send_http_event("http://"+String(sharedData.server_name)+"/PST_LOG/X_copy.php?v1=ANDON_BECZKI&v2=1&v3=104333-01&v6=49&MACADDR=40:4c:ca:4b:60:f8:ff:fe&IP=175.255.255.000");
+  dlb_server_obj.send_https_event("https://172.16.72.191");
+
+
+  Serial.println("");
+  Serial.println("WiFi connected!");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("ESP Mac Address: ");
+  Serial.println(WiFi.macAddress());
+  Serial.print("Subnet Mask: ");
+  Serial.println(WiFi.subnetMask());
+  Serial.print("Gateway IP: ");
+  Serial.println(WiFi.gatewayIP());
+  Serial.print("DNS: ");
+  Serial.println(WiFi.dnsIP());
+  Serial.print("RSSI: ");
+  Serial.println(String(WiFi.RSSI())+" dB");
+
+  // Ustawienie timera budzenia
+  //esp_sleep_enable_timer_wakeup(100 * 1000000);
+  // Start deep sleep
+  //esp_task_wdt_deinit();  // wyłącza watchdog (nie jest potrzebny przy deep sleep)
+  neopixelWrite(RGB_BUILTIN, RGB_BRIGHTNESS, 0, 0);  // Red UPDATE
   delay(1000);
+  //esp_deep_sleep_start();
+  //esp_task_wdt_reset();
+  }
+  
+  delay(1000);
+
 }
