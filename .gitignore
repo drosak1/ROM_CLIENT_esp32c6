@@ -3,5 +3,8 @@ temp/
 VirtualEnv
 .vscode/
 build/
+# Systemowe pliki macOS
 .DS_Store
-.
+*DS_Store*
+# Pliki tymczasowe
+*~
