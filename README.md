@@ -78,6 +78,12 @@ Deep-sleep	CPU, Wi-Fi, BLE i RAM wyłączone (tylko RTC działa)	10–20 µA	min
 - JTAG Adapter                          - Disabled
 - Zigbee Mode                           - Disabled
 
+## Zwiększenie buffora gita
+
+git config --global core.sshCommand "ssh -o Compression=no -o TCPKeepAlive=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=10"
+
+git config --global http.postBuffer 524288000
+
 
 ## Autor
 Dawid Rosak
