@@ -11,6 +11,31 @@ void Task1code(void *pvParameters) {
             sharedData.counter++;
             sharedData.ledState = !sharedData.ledState;
             digitalWrite(LED_BUILTIN, sharedData.ledState);
+            digitalWrite(GPIO_NUM_2,HIGH);
+            digitalWrite(GPIO_NUM_8,HIGH);
+            digitalWrite(GPIO_NUM_9,HIGH);
+            digitalWrite(GPIO_NUM_10,HIGH);
+            digitalWrite(GPIO_NUM_11,HIGH);
+            digitalWrite(GPIO_NUM_16,HIGH);
+            digitalWrite(GPIO_NUM_17,HIGH);
+            digitalWrite(GPIO_NUM_18,HIGH);
+            digitalWrite(GPIO_NUM_19,HIGH);
+            digitalWrite(GPIO_NUM_20,HIGH);
+            digitalWrite(GPIO_NUM_21,HIGH);
+            delay(100);
+            digitalWrite(GPIO_NUM_2,LOW);
+            digitalWrite(GPIO_NUM_8,LOW);
+            digitalWrite(GPIO_NUM_9,LOW);
+            digitalWrite(GPIO_NUM_10,LOW);
+            digitalWrite(GPIO_NUM_11,LOW);
+            digitalWrite(GPIO_NUM_16,LOW);
+            digitalWrite(GPIO_NUM_17,LOW);
+            digitalWrite(GPIO_NUM_18,LOW);
+            digitalWrite(GPIO_NUM_19,LOW);
+            digitalWrite(GPIO_NUM_20,LOW);
+            digitalWrite(GPIO_NUM_21,LOW);
+            delay(100);
+
             xSemaphoreGive(dataMutex);
         }
         delay(100);

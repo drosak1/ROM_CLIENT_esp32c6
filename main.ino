@@ -1,5 +1,34 @@
 /*
   Visual 
+  PIN_1   GND
+  PIN_2   3,3V
+  PIN_3   EN (RST)
+  PIN_4   ANALOG_4 (IO_4)
+  PIN_5   <>
+  PIN_6
+  PIN_7
+  PIN_8
+  PIN_9   ANALOG_1 (IO_1)
+  PIN_10  (10kOhm to 3,3V)
+  PIN_11  P3
+  PIN_12  P1
+  PIN_13  USB_D_N
+  PIN_14  USB_D_P
+  PIN_15  (PGM_MODE BUTTON - PROGRAM MODE)
+  PIN_16  
+  PIN_17
+  PIN_18
+  PIN_19  
+  PIN_20  SCL (IO_22 - I2C CLK)
+  PIN_21  SDA (IO_23 - I2C DATA)
+  PIN_22  
+  PIN_23  GND
+  PIN_24  RxD
+  PIN_25  TxD
+  PIN_26  ANALOG_3 (IO_3)
+  PIN_27  ANALOG_2 (IO_2)
+  PIN_28  GND
+
 */
 #include <Arduino.h>
 #include <esp_sleep.h>
@@ -56,6 +85,18 @@ dlb_server dlb_server_obj(&server, server_firmware_version);
 
 void IRAM_ATTR handleInterrupt() {
   buttonPressed = true;
+}
+
+void IRAM_ATTR handleInterrupt_GPIO8() {
+  Serial.println("handleInterrupt_GPIO8");
+}
+
+void IRAM_ATTR handleInterrupt_GPIO10() {
+  Serial.println("handleInterrupt_GPIO10");
+}
+
+void IRAM_ATTR handleInterrupt_GPIO11() {
+  Serial.println("handleInterrupt_GPIO11");
 }
 
 // Funkcja do obsługi strony głównej
@@ -121,6 +162,9 @@ void setup() {
 
   Serial.println("System uruchomiony. Czekam ...");
 
+  //set the resolution to 12 bits (0-4096)
+  analogReadResolution(12);
+
   sharedData.wifiSSID = dlb_eeprom_obj.read(0, 22);
   sharedData.wifiPassword = dlb_eeprom_obj.read(22, 22);
   sharedData.user_name = dlb_eeprom_obj.read(44, 20);
@@ -141,9 +185,29 @@ void setup() {
   }
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(GPIO_NUM_3, INPUT); //WakeUP
+
   pinMode(BUTTON_3, INPUT); // używamy pullup na zewnatrz !!!
 
+  pinMode(GPIO_NUM_2, OUTPUT);
+  pinMode(GPIO_NUM_8, OUTPUT);  //??? nie dziala
+  pinMode(GPIO_NUM_9, OUTPUT);
+  pinMode(GPIO_NUM_10, OUTPUT);
+  pinMode(GPIO_NUM_11, OUTPUT);
+  pinMode(GPIO_NUM_16, OUTPUT);
+  pinMode(GPIO_NUM_17, OUTPUT);
+  pinMode(GPIO_NUM_18, OUTPUT);
+  pinMode(GPIO_NUM_19, OUTPUT);
+  pinMode(GPIO_NUM_20, OUTPUT);
+  pinMode(GPIO_NUM_21, OUTPUT);
+  pinMode(GPIO_NUM_22, OUTPUT);
+
+  // RISING – zbocze narastające
+  // FALLING – zbocze opadające
+  // CHANGE – dowolna zmiana
+  // HIGH lub LOW – poziom logiczny (rzadziej używany)
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleInterrupt, FALLING);
+  //attachInterrupt(digitalPinToInterrupt(GPIO_NUM_8), handleInterrupt_GPIO8, FALLING);
   //attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleInterrupt, RISING);
   //attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleInterrupt, CHANGE);
 
@@ -180,17 +244,17 @@ void setup() {
   // Ustawienie timera budzenia
   //esp_sleep_enable_timer_wakeup(60 * 1000000); // 60 sekund
 
-  // Maska pinu 9
-  uint64_t pinMask = 1ULL << BUTTON_3;
+  // Maska pinu 8
+  uint64_t pinMask = 1ULL << GPIO_NUM_3;
 
   // Wybudzenie: przycisk (stan niski) lub timer (10 sekund)
-  //esp_sleep_enable_ext1_wakeup(pinMask, ESP_EXT1_WAKEUP_ALL_LOW);
+  esp_sleep_enable_ext1_wakeup(pinMask, ESP_EXT1_WAKEUP_ALL_LOW);
   //esp_sleep_enable_timer_wakeup(WAKEUP_TIME_SEC * 1000000);
 
   // Start deep sleep
-  //esp_task_wdt_deinit();  // wyłącza watchdog (nie jest potrzebny przy deep sleep)
-  //esp_light_sleep_start();
-  //esp_task_wdt_reset();
+  // esp_task_wdt_deinit();  // wyłącza watchdog (nie jest potrzebny przy deep sleep)
+  // esp_light_sleep_start();
+  // esp_task_wdt_reset();
 
   WiFi.mode(WIFI_AP);
   WiFi.softAP("ROM_APN");
@@ -225,6 +289,17 @@ void loop() {
   esp_task_wdt_reset();
   server.handleClient();
 
+  Serial.print("GPIO_NUM_3 - ");
+  Serial.println(GPIO_NUM_3);
+
+  int analog_0 = analogReadMilliVolts(0);
+  int analog_1 = analogReadMilliVolts(1);
+
+  Serial.print("Analog_0 - ");
+  Serial.print(analog_0);
+  Serial.print("  Analog_1 - ");
+  Serial.println(analog_1);
+
   if (millis() - lastPrint > 5000) {
     Serial.println("loop() działa niezależnie...");
     lastPrint = millis();
@@ -240,9 +315,12 @@ void loop() {
     Serial.println("no WiFi connection ...");
     delay(1000);
     WiFi.begin(sharedData.wifiSSID, sharedData.wifiPassword);
-    while (WiFi.status() != WL_CONNECTED) {
+    int nn = 0;
+    while ((WiFi.status() != WL_CONNECTED) and (nn<5)) {
       delay(100);
       Serial.print("...");
+      esp_task_wdt_reset();
+      nn++;
     }
   }
   else{
