@@ -53,11 +53,13 @@
 #include "WWW_site.h"
 #include "dlb_server.h"
 
+#include "EmonLib.h"                   // RMS library
+
 int server_firmware_version = 1;
 
-#define BUTTON_PIN    4  // GPIO4
-#define BUTTON_3 GPIO_NUM_3
-#define WAKEUP_TIME_SEC 10        // czas wybudzenia w sekundach
+#define BUTTON_BOOT       GPIO_NUM_9
+#define BUTTON_3          GPIO_NUM_3
+#define WAKEUP_TIME_SEC   10        // czas wybudzenia w sekundach
 
 volatile bool buttonPressed = false;  // musi być volatile! aby kompilator nie optymalizował ich "na zbyt mądrze"
 static unsigned long lastPrint = 0;
@@ -68,6 +70,8 @@ String server_fingerprit;
 WiFiMulti wifiMulti;
 DNSServer dnsServer;
 WebServer server(80);
+
+String apn_mode;
 
 TaskHandle_t Task1;
 TaskHandle_t Task2;
@@ -184,14 +188,14 @@ void setup() {
       break;
   }
 
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_BOOT, INPUT_PULLUP);
   pinMode(GPIO_NUM_3, INPUT); //WakeUP
 
   pinMode(BUTTON_3, INPUT); // używamy pullup na zewnatrz !!!
 
   pinMode(GPIO_NUM_2, OUTPUT);
   pinMode(GPIO_NUM_8, OUTPUT);  //??? nie dziala
-  pinMode(GPIO_NUM_9, OUTPUT);
+ // pinMode(GPIO_NUM_9, OUTPUT); //BOOT PIN
   pinMode(GPIO_NUM_10, OUTPUT);
   pinMode(GPIO_NUM_11, OUTPUT);
   pinMode(GPIO_NUM_16, OUTPUT);
@@ -206,7 +210,7 @@ void setup() {
   // FALLING – zbocze opadające
   // CHANGE – dowolna zmiana
   // HIGH lub LOW – poziom logiczny (rzadziej używany)
-  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleInterrupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(BUTTON_BOOT), handleInterrupt, FALLING);
   //attachInterrupt(digitalPinToInterrupt(GPIO_NUM_8), handleInterrupt_GPIO8, FALLING);
   //attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleInterrupt, RISING);
   //attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleInterrupt, CHANGE);
@@ -256,8 +260,19 @@ void setup() {
   // esp_light_sleep_start();
   // esp_task_wdt_reset();
 
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP("ROM_APN");
+  neopixelWrite(RGB_BUILTIN, 0, RGB_BRIGHTNESS, 0);
+  delay(2000);
+
+  if(!digitalRead(BUTTON_BOOT)){
+    WiFi.mode(WIFI_AP); //Tryb Access Point (AP) — ESP32-C6 tworzy własną sieć Wi-Fi, inni mogą się łączyć
+    WiFi.softAP("ROM_APN");
+    apn_mode = "WIFI_AP";
+  }
+  else
+  {
+    WiFi.mode(WIFI_STA); //Tryb stacji (klienta) — ESP32-C6 łączy się z istniejącą siecią Wi-Fi (np. z routerem)
+    apn_mode = "WIFI_STA";
+  }
   if (dnsServer.start()) {
       Serial.println("Started DNS server in captive portal-mode");
   } else {
@@ -325,12 +340,14 @@ void loop() {
   }
   else{
 
-  dlb_server_obj.send_http_event("http://"+String(sharedData.server_name)+"/PST_LOG/X_copy.php?v1=ANDON_BECZKI&v2=1&v3=104333-01&v6=49&MACADDR=40:4c:ca:4b:60:f8:ff:fe&IP=175.255.255.000");
-  dlb_server_obj.send_https_event("https://172.16.72.191");
+  //dlb_server_obj.send_http_event("http://"+String(sharedData.server_name)+"/PST_LOG/X_copy.php?v1=ANDON_BECZKI&v2=1&v3=104333-01&v6=49&MACADDR=40:4c:ca:4b:60:f8:ff:fe&IP=175.255.255.000");
+  //dlb_server_obj.send_https_event("https://172.16.72.191");
 
 
   Serial.println("");
-  Serial.println("WiFi connected!");
+  Serial.print("APN -> ");
+  Serial.print(apn_mode);
+  Serial.println(" WiFi connected!");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   Serial.print("ESP Mac Address: ");
